@@ -1,0 +1,1600 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>Game of Thrones RPG</title>
+    
+    <link rel="manifest" href="data:application/manifest+json,{
+        'name': 'Game of Thrones RPG',
+        'short_name': 'GoT RPG',
+        'description': 'Interactive Game of Thrones RPG with Claude AI',
+        'start_url': '.',
+        'display': 'standalone',
+        'background_color': '#0f0f0f',
+        'theme_color': '#1a1a1a',
+        'icons': [{
+            'src': 'data:image/svg+xml,<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 100 100\"><text y=\".9em\" font-size=\"90\">🐉</text></svg>',
+            'sizes': '192x192',
+            'type': 'image/svg+xml'
+        }]
+    }">
+    
+    <style>
+        * { 
+            margin: 0; 
+            padding: 0; 
+            box-sizing: border-box; 
+        }
+        
+        :root {
+            --bg-primary: #0f0f0f;
+            --bg-secondary: #1a1a1a;
+            --bg-tertiary: #252525;
+            --text-primary: #e5e5e5;
+            --text-secondary: #a0a0a0;
+            --text-muted: #666666;
+            --accent: #ffcc00;
+            --border: #333333;
+            --shadow: rgba(0, 0, 0, 0.3);
+        }
+        
+        body {
+            font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            height: 100vh;
+            overflow: hidden;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        
+        .app-container {
+            display: flex;
+            height: 100vh;
+            gap: 1px;
+            background: var(--border);
+        }
+        
+        @media (max-width: 768px) {
+            .app-container {
+                flex-direction: column;
+            }
+            
+            .side-panel {
+                width: 100% !important;
+                height: 40vh;
+                order: 2;
+            }
+            
+            .main-panel {
+                height: 60vh;
+                order: 1;
+            }
+        }
+        
+        .main-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: var(--bg-primary);
+        }
+        
+        .header {
+            padding: 16px 20px;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-weight: 600;
+            font-size: 16px;
+        }
+        
+        .mode-indicator {
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .mode-setup {
+            background: rgba(255, 204, 0, 0.1);
+            color: var(--accent);
+            border: 1px solid rgba(255, 204, 0, 0.2);
+        }
+        
+        .mode-game {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-secondary);
+            border: 1px solid var(--border);
+        }
+        
+        .chat-container {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            background: var(--bg-primary);
+        }
+        
+        .message {
+            margin: 16px 0;
+            padding: 12px 16px;
+            border-radius: 8px;
+            max-width: 80%;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        
+        .user-message {
+            background: var(--bg-tertiary);
+            margin-left: auto;
+            border-left: 2px solid var(--accent);
+        }
+        
+        .ai-message {
+            background: var(--bg-secondary);
+            border-left: 2px solid var(--text-muted);
+        }
+        
+        .system-message {
+            background: rgba(255, 204, 0, 0.05);
+            border-left: 2px solid var(--accent);
+            text-align: center;
+            font-style: italic;
+            color: var(--text-secondary);
+            max-width: 100%;
+        }
+        
+        .setup-message {
+            background: var(--bg-secondary);
+            border-left: 2px solid var(--accent);
+        }
+        
+        .input-area {
+            padding: 16px 20px;
+            background: var(--bg-secondary);
+            border-top: 1px solid var(--border);
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+        
+        .input-area input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.2s ease;
+        }
+        
+        .input-area input:focus {
+            border-color: var(--accent);
+        }
+        
+        .input-area input::placeholder {
+            color: var(--text-muted);
+        }
+        
+        .btn {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+        }
+        
+        .btn:hover {
+            background: var(--accent);
+            color: var(--bg-primary);
+            border-color: var(--accent);
+        }
+        
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .btn:disabled:hover {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            border-color: var(--border);
+        }
+        
+        .btn-small {
+            padding: 8px 12px;
+            font-size: 12px;
+        }
+        
+        .side-panel {
+            width: 320px;
+            background: var(--bg-secondary);
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .tabs {
+            display: flex;
+            background: var(--bg-tertiary);
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .tab {
+            flex: 1;
+            padding: 12px;
+            text-align: center;
+            cursor: pointer;
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 12px;
+            transition: all 0.2s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 500;
+        }
+        
+        .tab.active {
+            background: var(--bg-primary);
+            color: var(--text-primary);
+        }
+        
+        .tab-content {
+            flex: 1;
+            padding: 16px;
+            overflow-y: auto;
+        }
+        
+        .tab-panel {
+            display: none;
+        }
+        
+        .tab-panel.active {
+            display: block;
+        }
+        
+        .section {
+            background: var(--bg-primary);
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 16px;
+            border: 1px solid var(--border);
+        }
+        
+        .section h4 {
+            color: var(--text-primary);
+            margin-bottom: 12px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        
+        .character-card {
+            background: var(--bg-primary);
+            border-radius: 6px;
+            padding: 12px;
+            margin-bottom: 12px;
+            border: 1px solid var(--border);
+        }
+        
+        .character-name {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+        }
+        
+        .relationship-bar {
+            background: var(--bg-tertiary);
+            height: 4px;
+            border-radius: 2px;
+            margin: 6px 0;
+            overflow: hidden;
+        }
+        
+        .relationship-fill {
+            height: 100%;
+            border-radius: 2px;
+            transition: width 0.3s ease;
+        }
+        
+        .trust-fill { background: var(--accent); }
+        .attraction-fill { background: var(--text-secondary); }
+        
+        .memory-item {
+            background: var(--bg-primary);
+            border-radius: 6px;
+            padding: 12px;
+            margin-bottom: 8px;
+            border: 1px solid var(--border);
+            font-size: 12px;
+            position: relative;
+        }
+        
+        .memory-date {
+            color: var(--accent);
+            font-size: 11px;
+            font-weight: 500;
+            margin-bottom: 4px;
+        }
+        
+        .delete-btn {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: transparent;
+            color: var(--text-muted);
+            border: none;
+            padding: 2px 4px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+        
+        .memory-item:hover .delete-btn {
+            opacity: 1;
+        }
+        
+        .delete-btn:hover {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+        }
+        
+        .api-setup {
+            background: rgba(255, 204, 0, 0.05);
+            border: 1px solid rgba(255, 204, 0, 0.2);
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+        
+        .api-setup input {
+            width: 100%;
+            padding: 12px;
+            margin: 8px 0;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            font-size: 14px;
+        }
+        
+        .api-setup input:focus {
+            border-color: var(--accent);
+            outline: none;
+        }
+        
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .memory-search {
+            width: 100%;
+            padding: 8px 12px;
+            margin-bottom: 12px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            font-size: 12px;
+        }
+        
+        .memory-search:focus {
+            border-color: var(--accent);
+            outline: none;
+        }
+        
+        .loading {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+        
+        .mobile-toggle {
+            display: none;
+        }
+        
+        @media (max-width: 768px) {
+            .mobile-toggle {
+                display: block;
+                position: absolute;
+                top: 12px;
+                right: 16px;
+                background: var(--bg-tertiary);
+                border: 1px solid var(--border);
+                color: var(--text-primary);
+                padding: 8px 12px;
+                border-radius: 6px;
+                font-size: 16px;
+                cursor: pointer;
+            }
+            
+            .header {
+                padding-right: 60px;
+            }
+        }
+        
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: var(--bg-primary);
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 3px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--text-muted);
+        }
+        
+        /* Custom checkbox styles */
+        input[type="checkbox"] {
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            border: 1px solid var(--border);
+            border-radius: 3px;
+            background: var(--bg-primary);
+            margin-right: 8px;
+            position: relative;
+            cursor: pointer;
+        }
+        
+        input[type="checkbox"]:checked {
+            background: var(--accent);
+            border-color: var(--accent);
+        }
+        
+        input[type="checkbox"]:checked::after {
+            content: '✓';
+            position: absolute;
+            top: -2px;
+            left: 2px;
+            color: var(--bg-primary);
+            font-size: 12px;
+            font-weight: bold;
+        }
+        
+        /* Custom range slider */
+        input[type="range"] {
+            appearance: none;
+            width: 100%;
+            height: 4px;
+            border-radius: 2px;
+            background: var(--bg-tertiary);
+            outline: none;
+            margin: 8px 0;
+        }
+        
+        input[type="range"]::-webkit-slider-thumb {
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: var(--accent);
+            cursor: pointer;
+        }
+        
+        input[type="range"]::-moz-range-thumb {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: var(--accent);
+            cursor: pointer;
+            border: none;
+        }
+        
+        /* Labels */
+        label {
+            display: flex;
+            align-items: center;
+            margin: 8px 0;
+            color: var(--text-secondary);
+            font-size: 13px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <div class="main-panel">
+            <div class="header">
+                <span>🐉 Game of Thrones RPG</span>
+                <div class="mode-indicator mode-setup" id="modeIndicator">Setup Mode</div>
+            </div>
+            
+            <div class="chat-container" id="chatContainer">
+                <div class="message system-message">
+                    Welcome to a minimalist Game of Thrones RPG experience. Enter your Claude API key to begin.
+                </div>
+            </div>
+            
+            <div class="input-area">
+                <input type="text" id="userInput" placeholder="Type your message..." disabled>
+                <button class="btn" onclick="sendMessage()" id="sendBtn" disabled>Send</button>
+                <button class="btn" onclick="toggleSetupMode()" id="setupBtn" disabled>Game</button>
+                <button class="btn" onclick="giveFeedback()" id="feedbackBtn" disabled style="display: none;">Feedback</button>
+            </div>
+        </div>
+        
+        <div class="side-panel" id="sidePanel">
+            <div class="tabs">
+                <button class="tab active" onclick="switchTab('setup')">Setup</button>
+                <button class="tab" onclick="switchTab('characters')">Characters</button>
+                <button class="tab" onclick="switchTab('memory')">Memory</button>
+                <button class="tab" onclick="switchTab('world')">World</button>
+            </div>
+            
+            <div class="tab-content">
+                <div id="setup-tab" class="tab-panel active">
+                    <div class="api-setup">
+                        <h4>API Configuration</h4>
+                        <input type="password" id="apiKey" placeholder="Enter Claude API key">
+                        <button class="btn" onclick="setupAPI()" style="width: 100%; margin-top: 8px;">
+                            Activate
+                        </button>
+                    </div>
+                    
+                    <div class="section">
+                        <h4>Current Mode: <span id="currentMode">Setup</span></h4>
+                        <p style="color: var(--text-secondary); font-size: 12px; margin-bottom: 12px;">
+                            <strong>Setup:</strong> Configure world, character, timeline freely<br>
+                            <strong>Game:</strong> Play with full RPG systems active
+                        </p>
+                    </div>
+                    
+                    <div class="section">
+                        <h4>Game Settings</h4>
+                        <label><input type="checkbox" id="romanticPlots" checked> Romance elements</label>
+                        <label><input type="checkbox" id="explicitContent"> Explicit content</label>
+                        <label><input type="checkbox" id="lifeThreatening" checked> Life-threatening scenarios</label>
+                        <label><input type="checkbox" id="supernaturalElements" checked> Magic & supernatural</label>
+                        <label style="margin-top: 12px;">
+                            Difficulty: <span id="difficultyValue">6</span>
+                            <input type="range" id="difficulty" min="1" max="10" value="6">
+                        </label>
+                        <label style="margin-top: 12px;">
+                            Memory Context: <span id="maxRecentValue">100</span> recent messages
+                            <input type="range" id="maxRecentMessages" min="50" max="300" value="100">
+                        </label>
+                        <div style="font-size: 11px; color: var(--text-muted); margin-top: 8px;">
+                            Total messages stored: <span id="totalMessages">0</span><br>
+                            Compressed sessions: <span id="compressedSessions">0</span>
+                        </div>
+                    </div>
+                    
+                    <div class="controls">
+                        <button class="btn btn-small" onclick="saveGame()">💾 Save Game</button>
+                        <button class="btn btn-small" onclick="loadGame()">📁 Load Game</button>
+                        <button class="btn btn-small" onclick="exportGame()">📤 Export Story</button>
+                        <button class="btn btn-small" onclick="manageSlots()">🎭 Manage Campaigns</button>
+                        <button class="btn btn-small" onclick="newCampaign()">✨ New Campaign</button>
+                        <button class="btn btn-small" onclick="resetGame()">🗑️ Reset Current</button>
+                    </div>
+                    
+                    <div class="section" style="margin-top: 16px;">
+                        <h4>Current Campaign</h4>
+                        <div style="font-size: 12px; color: var(--text-secondary);">
+                            <div><strong>Name:</strong> <span id="currentCampaignName">Untitled Campaign</span></div>
+                            <div><strong>Started:</strong> <span id="campaignStartDate">Not set</span></div>
+                            <div><strong>Last Played:</strong> <span id="lastPlayedDate">Not set</span></div>
+                        </div>
+                        <input type="text" id="campaignNameInput" placeholder="Campaign name..." style="width: 100%; padding: 8px; margin: 8px 0; border: 1px solid var(--border); border-radius: 4px; background: var(--bg-primary); color: var(--text-primary); font-size: 12px;">
+                        <button class="btn btn-small" onclick="renameCampaign()" style="width: 100%;">Rename Campaign</button>
+                    </div>
+                </div>
+                
+                <div id="characters-tab" class="tab-panel">
+                    <div id="charactersList">
+                        <div class="character-card">
+                            <div class="character-name">No characters yet</div>
+                            <div style="color: var(--text-secondary); font-size: 12px;">
+                                Characters will appear as you establish them
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="memory-tab" class="tab-panel">
+                    <input type="text" class="memory-search" id="memorySearch" placeholder="Search memories..." onkeyup="searchMemories()">
+                    <div id="memoryList">
+                        <div class="memory-item">
+                            <div class="memory-date">No memories yet</div>
+                            <div style="color: var(--text-secondary);">
+                                Your story memories will appear here
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="world-tab" class="tab-panel">
+                    <div class="section">
+                        <h4>World State</h4>
+                        <div style="font-size: 12px; color: var(--text-secondary);">
+                            <div><strong>Location:</strong> <span id="currentLocation">Not set</span></div>
+                            <div><strong>Time:</strong> <span id="timeOfDay">Not set</span></div>
+                            <div><strong>Weather:</strong> <span id="weather">Not set</span></div>
+                            <div><strong>Season:</strong> <span id="season">Not set</span></div>
+                        </div>
+                    </div>
+                    
+                    <div class="section">
+                        <h4>Active Quests</h4>
+                        <div id="activeQuests" style="font-size: 12px; color: var(--text-secondary);">
+                            No active quests
+                        </div>
+                    </div>
+                    
+                    <div class="section">
+                        <h4>Political Situation</h4>
+                        <div id="politicalState" style="font-size: 12px; color: var(--text-secondary);">
+                            To be established in setup
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let gameState = {
+            apiKey: '',
+            mode: 'setup',
+            characters: new Map(),
+            memories: [],
+            fullChatLog: [], // Complete conversation history - NO LIMIT
+            compressedHistory: [], // Older conversations in compressed form
+            setupInfo: '',
+            feedbackRules: [],
+            worldState: {
+                location: 'Not set',
+                timeOfDay: 'Not set',
+                weather: 'Not set',
+                season: 'Not set',
+                politicalSituation: 'To be established in setup'
+            },
+            settings: {
+                romanticPlots: true,
+                explicitContent: false,
+                lifeThreatening: true,
+                supernaturalElements: true,
+                difficulty: 6,
+                maxRecentMessages: 100, // How many recent messages to include in prompt
+                compressionThreshold: 500 // Compress messages older than this
+            }
+        };
+        
+        function buildSystemPrompt() {
+            return `You are an AI assistant for a Game of Thrones RPG.
+
+MODE: ${gameState.mode.toUpperCase()}
+
+CORE RULES:
+- NEVER control the player character
+- Characters have agency and remember past interactions
+- Reference established history and relationships consistently
+- React meaningfully to player actions
+- Create realistic consequences, not auto-success
+- Follow up on important conversations naturally
+
+PLAYER FEEDBACK RULES (CRITICAL - FOLLOW EXACTLY):
+${gameState.feedbackRules.length > 0 ? gameState.feedbackRules.map(rule => `- ${rule}`).join('\n') : 'No specific feedback yet'}
+
+LONG-TERM MEMORY RULES:
+- You have access to the COMPLETE conversation history of this campaign
+- Reference specific details from ANY point in our story, even from months ago
+- Remember exact dialogue, promises, character development, and relationship changes
+- Characters should organically reference past events and conversations
+- Maintain perfect continuity across all sessions
+
+SETTINGS:`;
+        
+        function buildSystemPrompt() {
+            return `You are an AI assistant for a Game of Thrones RPG.
+
+MODE: ${gameState.mode.toUpperCase()}
+
+CORE RULES:
+- NEVER control the player character
+- Characters have agency and remember past interactions
+- Reference established history and relationships consistently
+- React meaningfully to player actions
+- Create realistic consequences, not auto-success
+- Follow up on important conversations naturally
+
+PLAYER FEEDBACK RULES (CRITICAL - FOLLOW EXACTLY):
+${gameState.feedbackRules.length > 0 ? gameState.feedbackRules.map(rule => `- ${rule}`).join('\n') : 'No specific feedback yet'}
+
+AUTO-MEMORY RULES:
+- Remember exact wording of important dialogue, promises, and secrets
+- Track emotional moments and character development precisely
+- Reference specific past conversations without being prompted
+- Maintain consistency in character voices and personalities
+
+SETTINGS:`;
+        }
+        
+        function setupAPI() {
+            const apiKeyInput = document.getElementById('apiKey');
+            gameState.apiKey = apiKeyInput.value.trim();
+            
+            if (!gameState.apiKey) {
+                alert('Please enter a valid Claude API key.');
+                return;
+            }
+            
+            // Set campaign start date if not set
+            if (!gameState.campaignStartDate) {
+                gameState.campaignStartDate = new Date().toISOString();
+                gameState.lastPlayedDate = new Date().toISOString();
+            }
+            
+            enableControls();
+            updateCampaignDisplay();
+            
+            addMessage('API activated. Ready for setup conversation.', 'system-message');
+            addMessage('💡 Tip: You\'re in setup mode. Discuss your character, world timeline, and preferences freely. Switch to game mode when ready.', 'setup-message');
+        }
+        
+        function toggleSetupMode() {
+            if (gameState.mode === 'setup') {
+                gameState.mode = 'game';
+                document.getElementById('modeIndicator').textContent = 'Game Mode';
+                document.getElementById('modeIndicator').className = 'mode-indicator mode-game';
+                document.getElementById('currentMode').textContent = 'Game';
+                document.getElementById('setupBtn').textContent = 'Setup';
+                document.getElementById('feedbackBtn').style.display = 'inline-block';
+                addMessage('🎮 Game mode activated. All RPG systems are now active.', 'system-message');
+            } else {
+                gameState.mode = 'setup';
+                document.getElementById('modeIndicator').textContent = 'Setup Mode';
+                document.getElementById('modeIndicator').className = 'mode-indicator mode-setup';
+                document.getElementById('currentMode').textContent = 'Setup';
+                document.getElementById('setupBtn').textContent = 'Game';
+                document.getElementById('feedbackBtn').style.display = 'none';
+                addMessage('🎭 Setup mode activated. Modify world, characters, and rules freely.', 'setup-message');
+            }
+        }
+        
+        function giveFeedback() {
+            const feedback = prompt(`Give Claude behavioral feedback:
+
+Examples:
+• "Don't write trivial small talk"
+• "NPCs should be more proactive"
+• "Remember exact dialogue from important conversations"
+• "Stannis should speak more formally and directly"
+• "Don't describe every minor action in detail"
+
+Your feedback:`);
+            
+            if (feedback && feedback.trim()) {
+                gameState.feedbackRules.push(feedback.trim());
+                addMessage(`Feedback recorded: "${feedback}"`, 'system-message');
+                saveToStorage();
+            }
+        }
+        
+        async function sendToClaude(message, isSystemMessage = false) {
+            const chatContainer = document.getElementById('chatContainer');
+            chatContainer.classList.add('loading');
+            
+            try {
+                let fullPrompt;
+                
+                if (gameState.mode === 'setup') {
+                    fullPrompt = `You are helping set up a Game of Thrones RPG. The user can discuss:
+- Character details and starting situation
+- Timeline and world events
+- Character appearances and ages
+- World rules and preferences
+- Special modifications or exclusions
+
+Be conversational and helpful. Ask clarifying questions when needed.
+
+CURRENT SETUP: ${gameState.setupInfo || 'Nothing established yet'}
+CURRENT SETTINGS: Romance ${gameState.settings.romanticPlots}, Explicit ${gameState.settings.explicitContent}, Danger ${gameState.settings.lifeThreatening}, Magic ${gameState.settings.supernaturalElements}, Difficulty ${gameState.settings.difficulty}/10
+
+USER: ${message}`;
+                    
+                } else {
+                    // Game mode - include comprehensive history
+                    let recentContext = '';
+                    let compressedContext = '';
+                    
+                    // Get recent messages (always include these in full)
+                    if (gameState.fullChatLog.length > 0) {
+                        const recentMessages = gameState.fullChatLog.slice(-gameState.settings.maxRecentMessages);
+                        recentContext = '\n\nRECENT CONVERSATION HISTORY:\n' + 
+                            recentMessages.map(msg => `${msg.role}: ${msg.content}`).join('\n');
+                    }
+                    
+                    // Get compressed older history if available
+                    if (gameState.compressedHistory.length > 0) {
+                        compressedContext = '\n\nEARLIER CAMPAIGN HISTORY (COMPRESSED):\n' + 
+                            gameState.compressedHistory.join('\n');
+                    }
+                    
+                    // Include key memories for important moments
+                    let keyMemories = '';
+                    if (gameState.memories.length > 0) {
+                        const importantMemories = gameState.memories
+                            .filter(m => m.importance >= 7)
+                            .slice(-20)
+                            .map(m => `${m.timestamp}: ${m.event}`)
+                            .join('\n');
+                        
+                        if (importantMemories) {
+                            keyMemories = '\n\nKEY MOMENTS & MEMORIES:\n' + importantMemories;
+                        }
+                    }
+                    
+                    fullPrompt = `${buildSystemPrompt()}
+
+GAME SETTINGS: Romance ${gameState.settings.romanticPlots}, Explicit ${gameState.settings.explicitContent}, Danger ${gameState.settings.lifeThreatening}, Magic ${gameState.settings.supernaturalElements}, Difficulty ${gameState.settings.difficulty}/10
+
+ESTABLISHED SETUP: ${gameState.setupInfo || 'Standard GoT setting'}
+
+WORLD STATE: ${JSON.stringify(gameState.worldState, null, 2)}
+
+CHARACTERS: ${Array.from(gameState.characters.values()).map(char => 
+    `${char.name}: Trust ${char.trust}%, Attraction ${char.attraction}%, Last: ${char.lastInteraction}`
+).join('\n')}
+${compressedContext}
+${keyMemories}
+${recentContext}
+
+TOTAL CAMPAIGN MESSAGES: ${gameState.fullChatLog.length} (spanning ${Math.floor(gameState.fullChatLog.length / 2)} exchanges)
+
+PLAYER ACTION: ${message}
+
+Respond as Game Master, using the full context of our campaign history:`;
+                }
+                
+                const response = await fetch('https://api.anthropic.com/v1/messages', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-api-key': gameState.apiKey,
+                        'anthropic-version': '2023-06-01'
+                    },
+                    body: JSON.stringify({
+                        model: 'claude-3-sonnet-20240229',
+                        max_tokens: 1500,
+                        messages: [{
+                            role: 'user',
+                            content: fullPrompt
+                        }]
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`API Error: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                const aiResponse = data.content[0].text;
+                
+                const messageClass = gameState.mode === 'setup' ? 'setup-message' : 'ai-message';
+                addMessage(aiResponse, messageClass);
+                
+                // Store in full chat log (NEVER DELETE - keep everything)
+                gameState.fullChatLog.push(
+                    { role: 'Player', content: message, timestamp: new Date().toISOString() },
+                    { role: 'GM', content: aiResponse, timestamp: new Date().toISOString() }
+                );
+                
+                // Compress old messages if we have too many for efficient prompts
+                compressOldMessages();
+                
+                if (gameState.mode === 'game' && !isSystemMessage) {
+                    storeMemory(message, aiResponse);
+                    updateWorldState(aiResponse);
+                    updateCharacters(message, aiResponse);
+                } else if (gameState.mode === 'setup') {
+                    gameState.setupInfo = (gameState.setupInfo || '') + `\nUser: ${message}\nClaude: ${aiResponse}`;
+                }
+                
+                saveToStorage();
+                
+            } catch (error) {
+                addMessage(`Error: ${error.message}`, 'system-message');
+                console.error('Error:', error);
+            }
+            
+            chatContainer.classList.remove('loading');
+        }
+        
+        function sendMessage() {
+            const input = document.getElementById('userInput');
+            const message = input.value.trim();
+            
+            if (!message || !gameState.apiKey) return;
+            
+            const userLabel = gameState.mode === 'setup' ? 'You' : 'Player';
+            addMessage(`${userLabel}: ${message}`, 'user-message');
+            sendToClaude(message);
+            
+            input.value = '';
+        }
+        
+        function addMessage(text, className) {
+            const chatContainer = document.getElementById('chatContainer');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${className}`;
+            messageDiv.innerHTML = text.replace(/\n/g, '<br>');
+            chatContainer.appendChild(messageDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+        
+        function storeMemory(userAction, aiResponse) {
+            const memory = {
+                id: Date.now(),
+                timestamp: new Date().toLocaleString(),
+                userAction: userAction,
+                aiResponse: aiResponse,
+                event: `${userAction.substring(0, 80)}... → ${aiResponse.substring(0, 100)}...`,
+                importance: calculateImportance(userAction, aiResponse),
+                characters: extractCharacters(userAction + ' ' + aiResponse),
+                location: gameState.worldState.location
+            };
+            
+            gameState.memories.push(memory);
+            updateMemoryDisplay();
+        }
+        
+        function calculateImportance(userAction, aiResponse) {
+            let importance = 5;
+            const emotionalKeywords = ['kiss', 'embrace', 'love', 'hate', 'promise', 'swear', 'secret', 'trust', 'betrayal'];
+            const actionKeywords = ['fight', 'kill', 'save', 'escape', 'attack', 'defend'];
+            
+            const text = (userAction + ' ' + aiResponse).toLowerCase();
+            
+            emotionalKeywords.forEach(keyword => {
+                if (text.includes(keyword)) importance += 2;
+            });
+            
+            actionKeywords.forEach(keyword => {
+                if (text.includes(keyword)) importance += 1;
+            });
+            
+            return Math.min(importance, 10);
+        }
+        
+        function extractCharacters(text) {
+            const characterNames = Array.from(gameState.characters.keys());
+            return characterNames.filter(name => 
+                text.toLowerCase().includes(name.toLowerCase()) ||
+                text.toLowerCase().includes(name.split(' ')[0].toLowerCase())
+            );
+        }
+        
+        function updateWorldState(aiResponse) {
+            const response = aiResponse.toLowerCase();
+            const locations = ['winterfell', 'king\'s landing', 'dragonstone', 'castle black', 'oldtown'];
+            
+            locations.forEach(location => {
+                if (response.includes(location)) {
+                    gameState.worldState.location = location;
+                    document.getElementById('currentLocation').textContent = location;
+                }
+            });
+        }
+        
+        function compressOldMessages() {
+            // Only compress if we have more messages than threshold
+            if (gameState.fullChatLog.length <= gameState.settings.compressionThreshold) {
+                return;
+            }
+            
+            // Take messages older than maxRecentMessages and compress them
+            const messagesToCompress = gameState.fullChatLog.slice(0, -gameState.settings.maxRecentMessages);
+            const recentMessages = gameState.fullChatLog.slice(-gameState.settings.maxRecentMessages);
+            
+            if (messagesToCompress.length > 0) {
+                // Group messages by sessions (every ~20 exchanges)
+                const sessionSize = 40; // 20 exchanges = 40 messages
+                const sessions = [];
+                
+                for (let i = 0; i < messagesToCompress.length; i += sessionSize) {
+                    const sessionMessages = messagesToCompress.slice(i, i + sessionSize);
+                    sessions.push(sessionMessages);
+                }
+                
+                // Compress each session into a summary
+                sessions.forEach((session, index) => {
+                    const sessionStart = session[0]?.timestamp || 'Unknown';
+                    const sessionEnd = session[session.length - 1]?.timestamp || 'Unknown';
+                    
+                    // Extract key events from this session
+                    const keyEvents = [];
+                    let currentExchange = [];
+                    
+                    session.forEach(msg => {
+                        currentExchange.push(msg.content);
+                        
+                        if (currentExchange.length === 2) { // Player + GM response
+                            const playerAction = currentExchange[0];
+                            const gmResponse = currentExchange[1];
+                            
+                            // Check if this exchange contains important keywords
+                            const important = containsImportantContent(playerAction + ' ' + gmResponse);
+                            
+                            if (important) {
+                                keyEvents.push(`Player: ${playerAction.substring(0, 100)}... → GM: ${gmResponse.substring(0, 200)}...`);
+                            }
+                            
+                            currentExchange = [];
+                        }
+                    });
+                    
+                    if (keyEvents.length > 0) {
+                        const compressionEntry = `SESSION ${index + 1} (${sessionStart.split('T')[0]} to ${sessionEnd.split('T')[0]}):\n${keyEvents.join('\n')}`;
+                        gameState.compressedHistory.push(compressionEntry);
+                    }
+                });
+                
+                // Keep only recent messages in fullChatLog
+                gameState.fullChatLog = recentMessages;
+                
+                // Limit compressed history size (keep last 50 sessions)
+                if (gameState.compressedHistory.length > 50) {
+                    gameState.compressedHistory = gameState.compressedHistory.slice(-50);
+                }
+            }
+        }
+        
+        function containsImportantContent(text) {
+            const importantKeywords = [
+                // Emotional
+                'love', 'hate', 'kiss', 'embrace', 'marry', 'promise', 'swear', 'vow',
+                // Action
+                'kill', 'die', 'fight', 'battle', 'war', 'escape', 'rescue', 'save',
+                // Relationship
+                'trust', 'betray', 'secret', 'reveal', 'confess', 'admit',
+                // Plot
+                'discover', 'find', 'lose', 'give', 'take', 'receive', 'inherit',
+                // Names (major characters)
+                'stannis', 'davos', 'jon', 'daenerys', 'tyrion', 'cersei', 'jaime', 'arya', 'sansa'
+            ];
+            
+            const lowerText = text.toLowerCase();
+            return importantKeywords.some(keyword => lowerText.includes(keyword));
+        }
+            const text = (userAction + ' ' + aiResponse).toLowerCase();
+            
+            gameState.characters.forEach((character, name) => {
+                if (text.includes(name.toLowerCase()) || text.includes(name.split(' ')[0].toLowerCase())) {
+                    if (text.includes('trust') || text.includes('help')) {
+                        character.trust = Math.min(character.trust + 2, 100);
+                    }
+                    if (text.includes('betray') || text.includes('lie')) {
+                        character.trust = Math.max(character.trust - 5, 0);
+                    }
+                    if (text.includes('kiss') || text.includes('love')) {
+                        character.attraction = Math.min(character.attraction + 3, 100);
+                    }
+                    
+                    character.lastInteraction = `Day ${gameState.memories.length}: ${userAction.substring(0, 40)}...`;
+                }
+            });
+            
+            updateCharacterDisplay();
+        }
+        
+        function updateCharacterDisplay() {
+            const charactersList = document.getElementById('charactersList');
+            
+            if (gameState.characters.size === 0) {
+                charactersList.innerHTML = `
+                    <div class="character-card">
+                        <div class="character-name">No characters yet</div>
+                        <div style="color: var(--text-secondary); font-size: 12px;">
+                            Characters will appear as you establish them
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+            
+            let html = '';
+            gameState.characters.forEach((character, name) => {
+                html += `
+                    <div class="character-card">
+                        <div class="character-name">${character.name}</div>
+                        <div style="font-size: 12px; margin: 4px 0;">
+                            Trust: <div class="relationship-bar"><div class="relationship-fill trust-fill" style="width: ${character.trust}%"></div></div> ${character.trust}%
+                        </div>
+                        <div style="font-size: 12px; margin: 4px 0;">
+                            Attraction: <div class="relationship-bar"><div class="relationship-fill attraction-fill" style="width: ${character.attraction}%"></div></div> ${character.attraction}%
+                        </div>
+                        <div style="font-size: 11px; color: var(--text-secondary); margin-top: 8px;">
+                            ${character.lastInteraction}
+                        </div>
+                    </div>
+                `;
+            });
+            
+            charactersList.innerHTML = html;
+        }
+        
+        function updateMemoryDisplay() {
+            const memoryList = document.getElementById('memoryList');
+            
+            if (gameState.memories.length === 0) {
+                memoryList.innerHTML = `
+                    <div class="memory-item">
+                        <div class="memory-date">No memories yet</div>
+                        <div style="color: var(--text-secondary);">
+                            Your story memories will appear here
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+            
+            const memories = gameState.memories.slice(-20).reverse();
+            
+            memoryList.innerHTML = memories.map(memory => `
+                <div class="memory-item" data-id="${memory.id}">
+                    <div class="memory-date">Day ${gameState.memories.indexOf(memory) + 1} - ${memory.timestamp}</div>
+                    <div>${memory.event}</div>
+                    <button class="delete-btn" onclick="deleteMemory(${memory.id})">×</button>
+                </div>
+            `).join('');
+        }
+        
+        function searchMemories() {
+            const searchTerm = document.getElementById('memorySearch').value.toLowerCase();
+            const memoryItems = document.querySelectorAll('.memory-item');
+            
+            memoryItems.forEach(item => {
+                const text = item.textContent.toLowerCase();
+                item.style.display = text.includes(searchTerm) ? 'block' : 'none';
+            });
+        }
+        
+        function deleteMemory(memoryId) {
+            if (confirm('Delete this memory?')) {
+                gameState.memories = gameState.memories.filter(memory => memory.id !== memoryId);
+                updateMemoryDisplay();
+                saveToStorage();
+            }
+        }
+        
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-panel').forEach(panel => {
+                panel.classList.remove('active');
+            });
+            
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            document.getElementById(tabName + '-tab').classList.add('active');
+            event.target.classList.add('active');
+        }
+        
+        function saveGame() {
+            // Update last played date
+            gameState.lastPlayedDate = new Date().toISOString();
+            
+            const saveData = {
+                gameState: gameState,
+                timestamp: new Date().toLocaleString(),
+                campaignName: gameState.campaignName,
+                version: '3.0'
+            };
+            
+            const dataStr = JSON.stringify(saveData, null, 2);
+            const dataBlob = new Blob([dataStr], {type: 'application/json'});
+            
+            const filename = `${gameState.campaignName.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_${new Date().toISOString().split('T')[0]}.json`;
+            
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(dataBlob);
+            link.download = filename;
+            link.click();
+            
+            addMessage(`Campaign "${gameState.campaignName}" saved as ${filename}`, 'system-message');
+        }
+        
+        function newCampaign() {
+            if (gameState.fullChatLog.length > 0 || gameState.memories.length > 0) {
+                if (!confirm('Start a new campaign? Current progress will be reset (make sure to save first if you want to keep it).')) {
+                    return;
+                }
+            }
+            
+            const campaignName = prompt('Enter campaign name:', `Campaign ${new Date().toLocaleDateString()}`);
+            if (!campaignName) return;
+            
+            // Reset everything except API key and feedback rules
+            const savedApiKey = gameState.apiKey;
+            const savedFeedbackRules = [...gameState.feedbackRules];
+            
+            gameState = {
+                apiKey: savedApiKey,
+                mode: 'setup',
+                campaignName: campaignName,
+                campaignStartDate: new Date().toISOString(),
+                lastPlayedDate: new Date().toISOString(),
+                characters: new Map(),
+                memories: [],
+                fullChatLog: [],
+                compressedHistory: [],
+                setupInfo: '',
+                feedbackRules: savedFeedbackRules,
+                worldState: {
+                    location: 'Not set',
+                    timeOfDay: 'Not set',
+                    weather: 'Not set',
+                    season: 'Not set',
+                    politicalSituation: 'To be established in setup'
+                },
+                settings: {
+                    romanticPlots: true,
+                    explicitContent: false,
+                    lifeThreatening: true,
+                    supernaturalElements: true,
+                    difficulty: 6,
+                    maxRecentMessages: 100,
+                    compressionThreshold: 500
+                }
+            };
+            
+            document.getElementById('chatContainer').innerHTML = `
+                <div class="message system-message">
+                    New campaign "${campaignName}" started! Configure your world and character.
+                </div>
+            `;
+            
+            updateAllDisplays();
+            saveToStorage();
+            
+            addMessage(`✨ Welcome to "${campaignName}"! You're in setup mode.`, 'setup-message');
+        }
+        
+        function renameCampaign() {
+            const newName = document.getElementById('campaignNameInput').value.trim();
+            if (newName && newName !== gameState.campaignName) {
+                gameState.campaignName = newName;
+                updateCampaignDisplay();
+                saveToStorage();
+                addMessage(`Campaign renamed to "${newName}"`, 'system-message');
+            }
+        }
+        
+        function manageSlots() {
+            const savedCampaigns = getSavedCampaigns();
+            
+            if (savedCampaigns.length === 0) {
+                alert('No saved campaigns found. Save your current campaign first.');
+                return;
+            }
+            
+            let message = 'Saved Campaigns:\n\n';
+            savedCampaigns.forEach((campaign, index) => {
+                message += `${index + 1}. ${campaign.name} (${campaign.lastPlayed})\n`;
+            });
+            message += '\nTo load a campaign, use the "Load Game" button and select the file.';
+            
+            alert(message);
+        }
+        
+        function getSavedCampaigns() {
+            // This would need to be implemented with a file system API or server
+            // For now, just return empty array since we're using file downloads
+            return [];
+        }
+        
+        function updateCampaignDisplay() {
+            document.getElementById('currentCampaignName').textContent = gameState.campaignName;
+            document.getElementById('campaignStartDate').textContent = gameState.campaignStartDate ? 
+                new Date(gameState.campaignStartDate).toLocaleDateString() : 'Not set';
+            document.getElementById('lastPlayedDate').textContent = gameState.lastPlayedDate ? 
+                new Date(gameState.lastPlayedDate).toLocaleDateString() : 'Not set';
+            document.getElementById('campaignNameInput').value = gameState.campaignName;
+        }
+        
+        function loadGame() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.json';
+            
+            input.onchange = function(e) {
+                const file = e.target.files[0];
+                if (!file) return;
+                
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    try {
+                        const saveData = JSON.parse(e.target.result);
+                        gameState = saveData.gameState;
+                        
+                        if (gameState.characters && !(gameState.characters instanceof Map)) {
+                            const charactersArray = Object.entries(gameState.characters);
+                            gameState.characters = new Map(charactersArray);
+                        }
+                        
+                        if (!gameState.fullChatLog) gameState.fullChatLog = [];
+                        if (!gameState.feedbackRules) gameState.feedbackRules = [];
+                        
+                        updateAllDisplays();
+                        
+                        if (gameState.apiKey) {
+                            document.getElementById('apiKey').value = gameState.apiKey;
+                            enableControls();
+                        }
+                        
+                        addMessage(`Game loaded: ${saveData.timestamp}`, 'system-message');
+                        
+                    } catch (error) {
+                        alert('Error loading game: ' + error.message);
+                    }
+                };
+                reader.readAsText(file);
+            };
+            
+            input.click();
+        }
+        
+        function exportGame() {
+            let exportText = '🐉 GAME OF THRONES RPG - STORY EXPORT\n';
+            exportText += '==========================================\n\n';
+            exportText += `Exported: ${new Date().toLocaleString()}\n\n`;
+            
+            if (gameState.setupInfo) {
+                exportText += 'SETUP & WORLD INFO:\n';
+                exportText += gameState.setupInfo + '\n\n';
+            }
+            
+            if (gameState.feedbackRules.length > 0) {
+                exportText += 'FEEDBACK RULES:\n';
+                gameState.feedbackRules.forEach((rule, i) => {
+                    exportText += `${i + 1}. ${rule}\n`;
+                });
+                exportText += '\n';
+            }
+            
+            if (gameState.fullChatLog.length > 0) {
+                exportText += 'COMPLETE CONVERSATION:\n';
+                exportText += '=====================\n\n';
+                
+                gameState.fullChatLog.forEach((msg, index) => {
+                    exportText += `${msg.role}: ${msg.content}\n\n`;
+                });
+            }
+            
+            const dataBlob = new Blob([exportText], {type: 'text/plain; charset=utf-8'});
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(dataBlob);
+            link.download = `got_rpg_story_${new Date().toISOString().split('T')[0]}.txt`;
+            link.click();
+        }
+        
+        function resetGame() {
+            if (confirm('Reset entire game? All progress will be lost.')) {
+                gameState.memories = [];
+                gameState.characters = new Map();
+                gameState.setupInfo = '';
+                gameState.fullChatLog = [];
+                gameState.feedbackRules = [];
+                gameState.mode = 'setup';
+                
+                document.getElementById('chatContainer').innerHTML = `
+                    <div class="message system-message">
+                        Game reset. Ready for a new adventure.
+                    </div>
+                `;
+                
+                updateAllDisplays();
+                localStorage.removeItem('gotRpgSave');
+            }
+        }
+        
+        function newSetup() {
+            if (confirm('Start fresh setup? This will clear setup information but keep feedback rules.')) {
+                gameState.setupInfo = '';
+                gameState.mode = 'setup';
+                updateModeDisplay();
+                addMessage('Fresh setup started. Configure your world and character.', 'setup-message');
+            }
+        }
+        
+        function updateAllDisplays() {
+            updateCharacterDisplay();
+            updateMemoryDisplay();
+            updateWorldDisplay();
+            updateSettingsDisplay();
+            updateModeDisplay();
+            updateMemoryStats();
+            updateCampaignDisplay();
+        }
+        
+        function updateMemoryStats() {
+            if (document.getElementById('totalMessages')) {
+                document.getElementById('totalMessages').textContent = gameState.fullChatLog.length;
+            }
+            if (document.getElementById('compressedSessions')) {
+                document.getElementById('compressedSessions').textContent = gameState.compressedHistory.length;
+            }
+        }
+        
+        function updateWorldDisplay() {
+            document.getElementById('currentLocation').textContent = gameState.worldState.location;
+            document.getElementById('timeOfDay').textContent = gameState.worldState.timeOfDay;
+            document.getElementById('weather').textContent = gameState.worldState.weather;
+            document.getElementById('season').textContent = gameState.worldState.season;
+            document.getElementById('politicalState').textContent = gameState.worldState.politicalSituation;
+        }
+        
+        function updateSettingsDisplay() {
+            document.getElementById('romanticPlots').checked = gameState.settings.romanticPlots;
+            document.getElementById('explicitContent').checked = gameState.settings.explicitContent;
+            document.getElementById('lifeThreatening').checked = gameState.settings.lifeThreatening;
+            document.getElementById('supernaturalElements').checked = gameState.settings.supernaturalElements;
+            document.getElementById('difficulty').value = gameState.settings.difficulty;
+            document.getElementById('difficultyValue').textContent = gameState.settings.difficulty;
+        }
+        
+        function updateModeDisplay() {
+            if (gameState.mode === 'setup') {
+                document.getElementById('modeIndicator').textContent = 'Setup Mode';
+                document.getElementById('modeIndicator').className = 'mode-indicator mode-setup';
+                document.getElementById('currentMode').textContent = 'Setup';
+                document.getElementById('setupBtn').textContent = 'Game';
+                document.getElementById('feedbackBtn').style.display = 'none';
+            } else {
+                document.getElementById('modeIndicator').textContent = 'Game Mode';
+                document.getElementById('modeIndicator').className = 'mode-indicator mode-game';
+                document.getElementById('currentMode').textContent = 'Game';
+                document.getElementById('setupBtn').textContent = 'Setup';
+                document.getElementById('feedbackBtn').style.display = 'inline-block';
+            }
+        }
+        
+        function enableControls() {
+            document.getElementById('userInput').disabled = false;
+            document.getElementById('sendBtn').disabled = false;
+            document.getElementById('setupBtn').disabled = false;
+            document.getElementById('feedbackBtn').disabled = false;
+        }
+        
+        function saveToStorage() {
+            const saveState = {...gameState};
+            saveState.characters = Object.fromEntries(gameState.characters);
+            localStorage.setItem('gotRpgSave', JSON.stringify(saveState));
+        }
+        
+        function isMobile() {
+            return window.innerWidth <= 768;
+        }
+        
+        function optimizeForMobile() {
+            if (isMobile()) {
+                const sidePanel = document.getElementById('sidePanel');
+                sidePanel.style.display = 'none';
+                
+                const header = document.querySelector('.header');
+                const toggleBtn = document.createElement('button');
+                toggleBtn.innerHTML = '☰';
+                toggleBtn.className = 'mobile-toggle';
+                toggleBtn.onclick = () => {
+                    const panel = document.getElementById('sidePanel');
+                    panel.style.display = panel.style.display === 'none' ? 'flex' : 'none';
+                };
+                header.appendChild(toggleBtn);
+            }
+        }
+        
+        // Event Listeners
+        document.getElementById('userInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+        
+        document.getElementById('difficulty').addEventListener('input', function(e) {
+            gameState.settings.difficulty = parseInt(e.target.value);
+            document.getElementById('difficultyValue').textContent = e.target.value;
+        });
+        
+        document.getElementById('maxRecentMessages').addEventListener('input', function(e) {
+            gameState.settings.maxRecentMessages = parseInt(e.target.value);
+            document.getElementById('maxRecentValue').textContent = e.target.value;
+        });
+        
+        ['romanticPlots', 'explicitContent', 'lifeThreatening', 'supernaturalElements'].forEach(setting => {
+            document.getElementById(setting).addEventListener('change', function(e) {
+                gameState.settings[setting] = e.target.checked;
+            });
+        });
+        
+        // PWA Installation
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            
+            const installBtn = document.createElement('button');
+            installBtn.textContent = 'Install App';
+            installBtn.className = 'btn btn-small';
+            installBtn.onclick = async () => {
+                if (deferredPrompt) {
+                    deferredPrompt.prompt();
+                    const result = await deferredPrompt.userChoice;
+                    if (result.outcome === 'accepted') {
+                        addMessage('App installed successfully.', 'system-message');
+                    }
+                    deferredPrompt = null;
+                    installBtn.remove();
+                }
+            };
+            
+            document.querySelector('.controls').appendChild(installBtn);
+        });
+        
+        // Initialize
+        window.addEventListener('load', function() {
+            optimizeForMobile();
+            
+            const saved = localStorage.getItem('gotRpgSave');
+            if (saved) {
+                try {
+                    const savedState = JSON.parse(saved);
+                    gameState = savedState;
+                    
+                    if (gameState.characters && !(gameState.characters instanceof Map)) {
+                        const charactersArray = Object.entries(gameState.characters);
+                        gameState.characters = new Map(charactersArray);
+                    }
+                    
+                    if (!gameState.fullChatLog) gameState.fullChatLog = [];
+                    if (!gameState.feedbackRules) gameState.feedbackRules = [];
+                    if (!gameState.compressedHistory) gameState.compressedHistory = [];
+                    if (!gameState.settings.maxRecentMessages) gameState.settings.maxRecentMessages = 100;
+                    if (!gameState.settings.compressionThreshold) gameState.settings.compressionThreshold = 500;
+                    
+                    updateAllDisplays();
+                    
+                    if (gameState.apiKey) {
+                        document.getElementById('apiKey').value = gameState.apiKey;
+                        enableControls();
+                    }
+                    
+                    addMessage('Session restored.', 'system-message');
+                    
+                    if (gameState.feedbackRules.length > 0) {
+                        addMessage(`${gameState.feedbackRules.length} feedback rule(s) active.`, 'system-message');
+                    }
+                } catch (error) {
+                    console.error('Error loading session:', error);
+                }
+            }
+        });
+        
+        window.addEventListener('beforeunload', saveToStorage);
+    </script>
+</body>
+</html>
